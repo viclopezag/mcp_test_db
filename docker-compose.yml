@@ -1,48 +1,46 @@
 version: '3.8'
 
 services:
-
   postgres:
-    inage: postgres:15-alpine
+    image: postgres:15-alpine
     container_name: company_postgres
     environment:
-      POSTGRES_USER: test
-      POSTGRES_PASSWORD: test 
       POSTGRES_DB: test_db
-
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-
     ports:
       - "127.0.0.1:5432:5432"
     networks:
       - mcp_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d test_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-    
   mcp-server:
     build: .
     container_name: company_mcp_server
     environment:
-      DB_HOST: localhost
+      DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: test
       DB_PASSWORD: test
-      DB_NAME: test_db
-
-    depends_on:
-       postgres:
-        - postgres
+      DB_DATABASE: test_db
     ports:
       - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - mcp_network
 
 networks:
   mcp_network:
-   driver: bridge
+    driver: bridge
 
 volumes:
   postgres_data:
-
-
